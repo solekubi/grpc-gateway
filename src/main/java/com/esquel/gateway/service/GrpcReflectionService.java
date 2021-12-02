@@ -36,25 +36,25 @@ public class GrpcReflectionService {
   }
 
   public void loadGrpcServices() {
-    this.currentEndpoint = endpoint;
-    loadGrpcServicesByIpAndPort(endpoint.getHost(), endpoint.getPort(), Boolean.FALSE);
+    loadGrpcServicesByIpAndPort(this.endpoint);
   }
 
   @SneakyThrows
-  public void loadGrpcServicesByIpAndPort(String host, int port, boolean force) {
+  public void loadGrpcServicesByIpAndPort(Endpoint endpoint) {
     try {
-      if (Objects.isNull(channel) || force) {
-        this.currentEndpoint = new Endpoint(host,port);
-        this.channel = ChannelFactory.create(host, port);
+      if (Objects.isNull(this.channel) || !Objects.equals(endpoint, this.currentEndpoint)) {
+        this.channel = ChannelFactory.create(endpoint.getHost(), endpoint.getPort());
       }
-      List<String> serviceNames = GrpcReflectionUtils.listAllServices(channel).get();
+      List<String> serviceNames = GrpcReflectionUtils.listAllServices(this.channel).get();
       if (Objects.nonNull(serviceNames)) {
         FILE_DESCRIPTOR_SET_STORAGE.removeAll();
         for (String serviceName : serviceNames) {
-          FILE_DESCRIPTOR_SET_STORAGE.add(serviceName, GrpcReflectionUtils.lookupService(channel, serviceName).get());
+          FILE_DESCRIPTOR_SET_STORAGE.add(serviceName, GrpcReflectionUtils.lookupService(this.channel, serviceName).get());
         }
       }
+      this.currentEndpoint = endpoint;
     } catch (Exception e) {
+      logger.error(e.getMessage());
       throw new RuntimeException("Can not load grpc services!");
     }
   }

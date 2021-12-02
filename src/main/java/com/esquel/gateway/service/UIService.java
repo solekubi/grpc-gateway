@@ -2,10 +2,8 @@ package com.esquel.gateway.service;
 
 import com.esquel.gateway.constrants.FieldTypeEnum;
 import com.esquel.gateway.model.ApiDocument;
-import com.esquel.gateway.utils.GrpcReflectionUtils;
+import com.esquel.gateway.model.Endpoint;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,14 +29,21 @@ public class UIService {
   @Value("${server.port}")
   private int port;
 
-  public UIService(GrpcReflectionService grpcReflectionService) {
+  private final Endpoint endpoint;
+
+  public UIService(GrpcReflectionService grpcReflectionService, Endpoint endpoint) {
     this.grpcReflectionService = grpcReflectionService;
+    this.endpoint = endpoint;
   }
 
   public ApiDocument getApiDoc() {
 
     if (grpcReflectionService.getStorage().isEmpty()) {
-      grpcReflectionService.loadGrpcServices();
+      try {
+        grpcReflectionService.loadGrpcServices();
+      } catch (Exception e) {
+        logger.error(e.getMessage());
+      }
     }
 
     ApiDocument.ApiDocumentBuilder builder = ApiDocument.builder();
@@ -47,6 +52,7 @@ public class UIService {
     builder.info(new HashMap<>() {
       {
         put("title", "Grpc GateWay Swagger");
+        put("description", String.format("Default Grpc Endpoint Register = [%s]", endpoint.toString()));
         put("version", "1.0.0");
       }
     });
@@ -55,8 +61,8 @@ public class UIService {
       String server_host = System.getenv("UI_SERVER_HOST");
       String server_port = System.getenv("UI_SERVER_PORT");
       if (Objects.nonNull(server_host) && !server_host.isEmpty() &&
-      Objects.nonNull(server_port) && !server_port.isEmpty()){
-        builder.host(String.format("%s:%s",server_host, server_port));
+              Objects.nonNull(server_port) && !server_port.isEmpty()) {
+        builder.host(String.format("%s:%s", server_host, server_port));
       } else {
         builder.host(String.format("%s:%d", java.net.InetAddress.getLocalHost().getHostName(), port));
       }
@@ -65,16 +71,31 @@ public class UIService {
     }
 
     //tags
-    ImmutableList<Descriptors.ServiceDescriptor> serviceDescriptorList = grpcReflectionService.getServiceDescriptorList();
+    Endpoint currentEndPoint = grpcReflectionService.getCurrentEndPoint();
 
-    List<ApiDocument.Tag> tagList = serviceDescriptorList.stream().map(s -> ApiDocument.Tag.builder().name(s.getFullName()).build()).collect(Collectors.toList());
-    //新增reload
-    tagList.add(0, ApiDocument.Tag.builder().name(DEFAULT_TAG).externalDocs(new HashMap<>(){
+    List<ApiDocument.Tag> tagList = new ArrayList<>();
+
+    tagList.add(0, ApiDocument.Tag.builder().name(DEFAULT_TAG).externalDocs(new HashMap<>() {
       {
-        put("description","Endpoint Register");
-        put("url",grpcReflectionService.getCurrentEndPoint().toString());
+        put("description", "Endpoint Register");
+        put("url", Objects.isNull(currentEndPoint) ? "not found" : currentEndPoint.toString());
       }
     }).build());
+
+    ImmutableList<Descriptors.ServiceDescriptor> serviceDescriptorList = ImmutableList.<Descriptors.ServiceDescriptor>builder().build();
+
+    try {
+
+      serviceDescriptorList = grpcReflectionService.getServiceDescriptorList();
+
+      List<ApiDocument.Tag> serviceTags = serviceDescriptorList.stream().map(s -> ApiDocument.Tag.builder().name(s.getFullName()).build()).collect(Collectors.toList());
+
+      tagList.addAll(serviceTags);
+
+    } catch (Exception e) {
+      logger.error(e.getMessage());
+    }
+
     builder.tags(tagList);
 
     builder.schemes(List.of("http", "https"));
@@ -94,6 +115,18 @@ public class UIService {
     //获取实体类
     LinkedHashMap<String, ApiDocument.DefinitionType> definitionMap = new LinkedHashMap<>();
 
+    //新增reload
+    definitionMap.put(DEFAULT_TAG + ".Endpoint", ApiDocument.DefinitionType.builder()
+            .title("Endpoint")
+            .type(FieldTypeEnum.OBJECT.getType())
+            .properties(new HashMap<>() {
+              {
+                put("host", ApiDocument.FieldProperty.builder().type(FieldTypeEnum.STRING.getType()).build());
+                put("port", ApiDocument.FieldProperty.builder().type(FieldTypeEnum.INT32.getType()).build());
+              }
+            })
+            .build());
+
     List<Descriptors.FileDescriptor> fileDescriptorsList = grpcReflectionService.getFileDescriptorList();
 
     // build definitions
@@ -103,23 +136,40 @@ public class UIService {
       parseDefinitionType(packageName, messageTypes, definitionMap);
     }
 
-    //新增reload
-    definitionMap.put(DEFAULT_TAG + ".Endpoint",ApiDocument.DefinitionType.builder()
-                    .title("Endpoint")
-                    .type(FieldTypeEnum.OBJECT.getType())
-                    .properties(new HashMap<>() {
-                      {
-                        put("host", ApiDocument.FieldProperty.builder().type(FieldTypeEnum.STRING.getType()).build());
-                        put("port", ApiDocument.FieldProperty.builder().type(FieldTypeEnum.INT32.getType()).build());
-                      }
-                    })
-            .build());
 
     builder.definitions(definitionMap.entrySet().stream().sorted(Map.Entry.comparingByKey())
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                     (o, n) -> o, LinkedHashMap::new)));
 
     Map<String, ApiDocument.Path> pathMap = new HashMap<>();
+
+    pathMap.put("/reset", ApiDocument.Path.builder()
+            .get(ApiDocument.Operation.builder().tags(List.of(DEFAULT_TAG))
+                    .responses(new HashMap<>() {
+                      {
+                        put(String.valueOf(HttpStatus.OK.value()), ApiDocument.ResponseObject.builder()
+                                .schema(ApiDocument.ParameterSchema.builder().type(FieldTypeEnum.OBJECT.getType()).build())
+                                .build());
+                      }
+                    })
+                    .operationId("resetService").description("Reset Service Info").build()).build());
+
+    pathMap.put("/register", ApiDocument.Path.builder()
+            .put(ApiDocument.Operation.builder().tags(List.of(DEFAULT_TAG))
+                    .parameters(List.of(ApiDocument.Parameter.builder().name("Endpoint")
+                            .schema(ApiDocument.ParameterSchema.builder().ref(
+                                    DEFINITION_REF_PREFIX + DEFAULT_TAG + ".Endpoint"
+                            ).build()).build()))
+                    .responses(new HashMap<>() {
+                      {
+                        put(String.valueOf(HttpStatus.OK.value()), ApiDocument.ResponseObject.builder()
+                                .schema(ApiDocument.ParameterSchema.builder().type(FieldTypeEnum.OBJECT.getType()).build())
+                                .build());
+                      }
+                    })
+                    .operationId("registerService").description("Register New  Service InfoBy Port And Id").build())
+            .build());
+
 
     // build paths
     for (Descriptors.ServiceDescriptor sp : serviceDescriptorList) {
@@ -131,24 +181,6 @@ public class UIService {
         pathMap.put(String.format("/%s", m.getFullName()), pathBuilder.build());
       });
     }
-
-    pathMap.put("/reload-service", ApiDocument.Path.builder()
-            .get(ApiDocument.Operation.builder().tags(List.of(DEFAULT_TAG))
-                    .operationId("reloadService").description("Reload Service Info").build())
-            .put(ApiDocument.Operation.builder().tags(List.of(DEFAULT_TAG))
-                    .parameters(List.of(ApiDocument.Parameter.builder().name("Endpoint")
-                            .schema(ApiDocument.ParameterSchema.builder().ref(
-                                    DEFINITION_REF_PREFIX + DEFAULT_TAG + ".Endpoint"
-                            ).build()).build()))
-                    .responses(new HashMap<>(){
-                      {
-                        put(String.valueOf(HttpStatus.OK.value()), ApiDocument.ResponseObject.builder()
-                                .schema(ApiDocument.ParameterSchema.builder().type(FieldTypeEnum.OBJECT.getType()).build())
-                                .build());
-                      }
-                    })
-                    .operationId("reloadServiceByPortAndId").description("Reload Service Info By Port And Id").build())
-            .build());
 
     builder.paths(pathMap);
 

@@ -19,20 +19,20 @@ public class UIController {
     this.grpcReflectionService = grpcReflectionService;
   }
 
-  @RequestMapping("/")
+  @RequestMapping(value = "/", method = RequestMethod.GET)
   public String index() {
     return "ui/index.html";
   }
 
-  @RequestMapping(value = "/reload-service", method = RequestMethod.GET)
+  @RequestMapping(value = "/reset", method = RequestMethod.GET)
   public String reloadService() {
     grpcReflectionService.loadGrpcServices();
     return "redirect:/";
   }
 
-  @RequestMapping(value = "/reload-service", method = RequestMethod.PUT)
+  @RequestMapping(value = "/register", method = RequestMethod.PUT)
   public String reloadServiceByHost(@RequestBody Endpoint endpoint) {
-    grpcReflectionService.loadGrpcServicesByIpAndPort(endpoint.getHost(), endpoint.getPort(), Boolean.TRUE);
+    grpcReflectionService.loadGrpcServicesByIpAndPort(endpoint);
     return "redirect:/";
   }
 

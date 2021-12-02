@@ -94,7 +94,7 @@ public class GrpcReflectionUtils {
   public static ListenableFuture<ImmutableList<String>> listAllServices(Channel channel) {
     ListServicesHandler listServicesHandler = new ListServicesHandler();
     StreamObserver<ServerReflectionRequest> requestStream = ServerReflectionGrpc.newStub(channel)
-            .withDeadlineAfter(LIST_RPC_DEADLINE_MS, TimeUnit.SECONDS)
+            .withDeadlineAfter(LIST_RPC_DEADLINE_MS, TimeUnit.MILLISECONDS)
             .serverReflectionInfo(listServicesHandler);
     return listServicesHandler.start(requestStream);
   }
@@ -102,7 +102,7 @@ public class GrpcReflectionUtils {
   public static ListenableFuture<DescriptorProtos.FileDescriptorSet> lookupService(Channel channel, String serviceName) {
     LookupServiceHandler lookupServiceHandler = new LookupServiceHandler(serviceName);
     StreamObserver<ServerReflectionRequest> requestStream = ServerReflectionGrpc.newStub(channel)
-            .withDeadlineAfter(LOOKUP_RPC_DEADLINE_MS, TimeUnit.SECONDS)
+            .withDeadlineAfter(LOOKUP_RPC_DEADLINE_MS, TimeUnit.MILLISECONDS)
             .serverReflectionInfo(lookupServiceHandler);
     return lookupServiceHandler.start(requestStream);
   }
