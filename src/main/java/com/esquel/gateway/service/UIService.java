@@ -52,7 +52,14 @@ public class UIService {
     });
 
     try {
-      builder.host(String.format("%s:%d", java.net.InetAddress.getLocalHost().getHostName(), port));
+      String server_host = System.getenv("UI_SERVER_HOST");
+      String server_port = System.getenv("UI_SERVER_PORT");
+      if (Objects.nonNull(server_host) && !server_host.isEmpty() &&
+      Objects.nonNull(server_port) && !server_port.isEmpty()){
+        builder.host(String.format("%s:%s",server_host, server_port));
+      } else {
+        builder.host(String.format("%s:%d", java.net.InetAddress.getLocalHost().getHostName(), port));
+      }
     } catch (Exception e) {
       builder.host(String.format("%s:%d", "localhost", port));
     }
