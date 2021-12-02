@@ -1,0 +1,62 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.0'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'idea'
+	id 'com.google.protobuf' version '0.8.16'
+}
+
+group = 'com.esquel.gateway'
+sourceCompatibility = '11'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	maven { url 'https://maven.aliyun.com/repository/public' }
+	mavenCentral()
+}
+
+def grpcVersion = '1.39.0'
+def protobufVersion = '3.19.1'
+def protocVersion = protobufVersion
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web:2.5.6'
+	compileOnly 'org.projectlombok:lombok:1.18.22'
+	annotationProcessor 'org.projectlombok:lombok:1.18.22'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.6'
+
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-collections4
+	implementation 'org.apache.commons:commons-collections4:4.4'
+
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+
+	// https://mvnrepository.com/artifact/com.alibaba/fastjson
+	implementation 'com.alibaba:fastjson:1.2.78'
+
+	implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+	implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+	implementation "io.grpc:grpc-stub:${grpcVersion}"
+	implementation "io.grpc:grpc-services:${grpcVersion}"
+
+	// https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util
+	implementation "com.google.protobuf:protobuf-java-util:${protocVersion}"
+
+	compileOnly "org.springframework.boot:spring-boot-devtools"
+}
+
+protobuf {
+	protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
+	plugins {
+		grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
