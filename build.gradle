@@ -47,7 +47,9 @@ dependencies {
 	// https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util
 	implementation "com.google.protobuf:protobuf-java-util:${protocVersion}"
 
-	compileOnly "org.springframework.boot:spring-boot-devtools"
+	compileOnly 'org.springframework.boot:spring-boot-devtools:2.5.6'
+
+	implementation 'org.springframework.boot:spring-boot-starter-websocket:2.5.6'
 }
 
 protobuf {

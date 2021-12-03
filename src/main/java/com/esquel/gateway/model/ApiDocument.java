@@ -122,10 +122,10 @@ public class ApiDocument implements Serializable {
     private List<String> schemes =  List.of("http","https");
 
     @Builder.Default
-    private List<String> produces = Collections.singletonList("application/json");
+    private List<String> produces = List.of("application/json","text/html");
 
     @Builder.Default
-    private List<String> consumes = Collections.singletonList("application/json");
+    private List<String> consumes = List.of("application/json","text/html");
   }
 
   @Data

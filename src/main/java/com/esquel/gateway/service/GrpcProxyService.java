@@ -41,13 +41,9 @@ public class GrpcProxyService {
 
   private static final Logger logger = LoggerFactory.getLogger(GrpcReflectionService.class);
 
-  private final Endpoint endpoint;
-
   private final GrpcReflectionService grpcReflectionService;
 
-  public GrpcProxyService(Endpoint endpoint,
-                          GrpcReflectionService grpcReflectionService) {
-    this.endpoint = endpoint;
+  public GrpcProxyService(GrpcReflectionService grpcReflectionService) {
     this.grpcReflectionService = grpcReflectionService;
   }
 
@@ -147,6 +143,7 @@ public class GrpcProxyService {
     Map<String, Object> metaHeaderMap = JSON.parseObject(headers);
     ManagedChannel serviceChannel = null;
     try {
+      Endpoint endpoint = grpcReflectionService.getCurrentEndPoint();
       serviceChannel = ChannelFactory.create(endpoint.getHost(), endpoint.getPort(), metaHeaderMap);
       CallResults results = invokeMethod(methodDefinition, serviceChannel, DEFAULT, singletonList(payload));
       return Result.builder().code(200).data(results.asJSON()).build();

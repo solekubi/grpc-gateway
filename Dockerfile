@@ -2,7 +2,7 @@
 FROM gradle:jdk11 AS build
 WORKDIR /app
 COPY --chown=gradle:gradle . .
-RUN gradle bootJar
+RUN gradle bootJar -x test
 
 FROM openjdk:11-jre-slim
 WORKDIR /app

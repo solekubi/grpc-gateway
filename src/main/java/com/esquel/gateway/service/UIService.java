@@ -52,7 +52,7 @@ public class UIService {
     builder.info(new HashMap<>() {
       {
         put("title", "Grpc GateWay Swagger");
-        put("description", String.format("Default Grpc Endpoint Register = [%s]", endpoint.toString()));
+        put("description", String.format("Default Grpc Endpoint = [%s]", endpoint.toString()));
         put("version", "1.0.0");
       }
     });
@@ -77,7 +77,7 @@ public class UIService {
 
     tagList.add(0, ApiDocument.Tag.builder().name(DEFAULT_TAG).externalDocs(new HashMap<>() {
       {
-        put("description", "Endpoint Register");
+        put("description", "Current Endpoint");
         put("url", Objects.isNull(currentEndPoint) ? "not found" : currentEndPoint.toString());
       }
     }).build());

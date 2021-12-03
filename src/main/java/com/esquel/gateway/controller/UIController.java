@@ -4,8 +4,12 @@ import com.esquel.gateway.model.ApiDocument;
 import com.esquel.gateway.model.Endpoint;
 import com.esquel.gateway.service.GrpcReflectionService;
 import com.esquel.gateway.service.UIService;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Controller
 public class UIController {
@@ -14,9 +18,13 @@ public class UIController {
 
   private final GrpcReflectionService grpcReflectionService;
 
-  public UIController(UIService uiService, GrpcReflectionService grpcReflectionService) {
+  private final SimpMessagingTemplate simpMessagingTemplate;
+
+  public UIController(UIService uiService, GrpcReflectionService grpcReflectionService,
+                      SimpMessagingTemplate simpMessagingTemplate) {
     this.uiService = uiService;
     this.grpcReflectionService = grpcReflectionService;
+    this.simpMessagingTemplate = simpMessagingTemplate;
   }
 
   @RequestMapping(value = "/", method = RequestMethod.GET)
@@ -25,20 +33,23 @@ public class UIController {
   }
 
   @RequestMapping(value = "/reset", method = RequestMethod.GET)
-  public String reloadService() {
+  @ResponseBody
+  public void reset() {
     grpcReflectionService.loadGrpcServices();
-    return "redirect:/";
+    simpMessagingTemplate.convertAndSend("/topic/reload",true);
   }
 
   @RequestMapping(value = "/register", method = RequestMethod.PUT)
-  public String reloadServiceByHost(@RequestBody Endpoint endpoint) {
+  @ResponseBody
+  public void register(@RequestBody Endpoint endpoint) {
     grpcReflectionService.loadGrpcServicesByIpAndPort(endpoint);
-    return "redirect:/";
+    simpMessagingTemplate.convertAndSend("/topic/reload",true);
   }
 
-  @RequestMapping(value = "/api-docs", method = RequestMethod.GET)
+  @RequestMapping(value = "/swagger-ui/api-docs", method = RequestMethod.GET)
   @ResponseBody
   public ApiDocument getApiDoc() {
     return uiService.getApiDoc();
   }
+
 }
