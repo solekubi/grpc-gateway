@@ -22,6 +22,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class GrpcProxyService {
     }
     ImmutableList<Descriptors.FileDescriptor> fileDescriptors = GrpcReflectionUtils.ListFileDescriptor(fileDescriptorSet);
 
-    Descriptors.MethodDescriptor methodDescriptor =  GrpcReflectionUtils.getServiceMethod(definition,fileDescriptors);
+    Descriptors.MethodDescriptor methodDescriptor = GrpcReflectionUtils.getServiceMethod(definition, fileDescriptors);
 
     ImmutableSet<Descriptors.Descriptor> listMessageTypes = GrpcReflectionUtils.listMessageTypes(fileDescriptors);
 
@@ -139,16 +140,16 @@ public class GrpcProxyService {
   }
 
   public Result<Object> callService(String rawFullMethodName, String payload, String headers) {
+    Endpoint endpoint = getCurrentEndpoint();
     GrpcMethodDefinition methodDefinition = GrpcReflectionUtils.parseToMethodDefinition(rawFullMethodName);
     Map<String, Object> metaHeaderMap = JSON.parseObject(headers);
     ManagedChannel serviceChannel = null;
     try {
-      Endpoint endpoint = grpcReflectionService.getCurrentEndPoint();
       serviceChannel = ChannelFactory.create(endpoint.getHost(), endpoint.getPort(), metaHeaderMap);
       CallResults results = invokeMethod(methodDefinition, serviceChannel, DEFAULT, singletonList(payload));
       return Result.builder().code(200).result(results.asJSON()).build();
     } catch (Exception e) {
-      String message = e.getMessage();
+      String message = e.toString();
       Metadata metadata = Status.trailersFromThrowable(e);
       if (Objects.nonNull(metadata)) {
         ErrorInfo errorInfo = metadata.get(ProtoUtils.keyForProto(ErrorInfo.getDefaultInstance()));
@@ -162,5 +163,14 @@ public class GrpcProxyService {
         serviceChannel.shutdown();
       }
     }
+  }
+
+  private Endpoint getCurrentEndpoint() {
+    Endpoint endpoint = grpcReflectionService.getCurrentEndPoint();
+    if (Objects.isNull(endpoint)) {
+      grpcReflectionService.loadGrpcServices();
+      endpoint = grpcReflectionService.getCurrentEndPoint();
+    }
+    return endpoint;
   }
 }

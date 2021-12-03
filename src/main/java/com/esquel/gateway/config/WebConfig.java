@@ -1,6 +1,7 @@
 package com.esquel.gateway.config;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.protobuf.ProtobufHttpMessageConverter;
@@ -32,17 +33,15 @@ public class WebConfig implements WebMvcConfigurer {
         return mapper;
     }
 
-    @Bean
-    public WebMvcConfigurer cors() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedHeaders("*")
-                        .allowedMethods("*")
-                        .allowedOrigins("*");
-            }
-        };
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+//        添加映射路径
+        registry.addMapping("/**")
+                .allowCredentials(true)
+                .allowedOriginPatterns("*")
+                .allowedMethods("*")
+                .allowedHeaders("*")
+                .exposedHeaders("*");
     }
 
     @Override
