@@ -146,7 +146,7 @@ public class GrpcProxyService {
       Endpoint endpoint = grpcReflectionService.getCurrentEndPoint();
       serviceChannel = ChannelFactory.create(endpoint.getHost(), endpoint.getPort(), metaHeaderMap);
       CallResults results = invokeMethod(methodDefinition, serviceChannel, DEFAULT, singletonList(payload));
-      return Result.builder().code(200).data(results.asJSON()).build();
+      return Result.builder().code(200).result(results.asJSON()).build();
     } catch (Exception e) {
       String message = e.getMessage();
       Metadata metadata = Status.trailersFromThrowable(e);
