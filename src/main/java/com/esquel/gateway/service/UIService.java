@@ -36,8 +36,8 @@ public class UIService {
   public UIService(GrpcReflectionService grpcReflectionService,
                    Endpoint endpoint,
                    @Value("${app.env}") String env,
-                   @Value("${ui.service.host}") String uiServerHost,
-                   @Value("${ui.service.port}") int uiServerPort
+                   @Value("${ui.server.host}") String uiServerHost,
+                   @Value("${ui.server.port}") int uiServerPort
   ) {
     this.grpcReflectionService = grpcReflectionService;
     this.endpoint = endpoint;
