@@ -60,11 +60,13 @@ public class UIService {
     try {
       String server_host = System.getenv("UI_SERVER_HOST");
       String server_port = System.getenv("UI_SERVER_PORT");
+      List<String> ignorePort = List.of("80", "443");
       if (Objects.nonNull(server_host) && !server_host.isEmpty() &&
               Objects.nonNull(server_port) && !server_port.isEmpty()) {
-        builder.host(String.format("%s:%s", server_host, server_port));
+        builder.host(server_host + (ignorePort.contains(server_port) ? "" : ":" + server_port));
       } else {
-        builder.host(String.format("%s:%d", java.net.InetAddress.getLocalHost().getHostName(), port));
+        builder.host( java.net.InetAddress.getLocalHost().getHostName()
+                + (ignorePort.contains(String.valueOf(port)) ? "" : ":" + port));
       }
     } catch (Exception e) {
       builder.host(String.format("%s:%d", "localhost", port));
@@ -102,15 +104,21 @@ public class UIService {
 
     builder.securityDefinitions(new HashMap<>() {
       {
-        put("api_key", new HashMap<>() {
+        put("ApiKeyAuth", new HashMap<>() {
           {
             put("type", "apiKey");
-            put("name", "Authorization ");
+            put("name", "Authorization");
             put("in", "header");
           }
         });
       }
     });
+
+    builder.security(List.of(new HashMap<>() {
+      {
+        put("ApiKeyAuth", new ArrayList<>());
+      }
+    }));
 
     //获取实体类
     LinkedHashMap<String, ApiDocument.DefinitionType> definitionMap = new LinkedHashMap<>();

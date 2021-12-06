@@ -32,6 +32,8 @@ public class ApiDocument implements Serializable {
 
   private Map<String,Object> securityDefinitions;
 
+  private List<Map<String,List<Object>>> security;
+
   private Map<String,DefinitionType> definitions;
 
   private Map<String,Object> externalDocs;
