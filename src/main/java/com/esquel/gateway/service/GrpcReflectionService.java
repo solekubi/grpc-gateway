@@ -1,9 +1,10 @@
 package com.esquel.gateway.service;
 
-import com.esquel.gateway.store.MapStorage;
+import com.esquel.gateway.store.CacheStorage;
 import com.esquel.gateway.utils.ChannelFactory;
 import com.esquel.gateway.model.Endpoint;
 import com.esquel.gateway.utils.GrpcReflectionUtils;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.DescriptorProtos;
@@ -12,9 +13,11 @@ import io.grpc.ManagedChannel;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -27,12 +30,15 @@ public class GrpcReflectionService {
 
   private ManagedChannel channel;
 
-  private final MapStorage<String, DescriptorProtos.FileDescriptorSet> FILE_DESCRIPTOR_SET_STORAGE = new MapStorage<>();
+  private final CacheStorage<String, DescriptorProtos.FileDescriptorSet> FILE_DESCRIPTOR_SET_STORAGE;
 
   private Endpoint currentEndpoint;
 
-  public GrpcReflectionService(Endpoint endpoint) {
+  public GrpcReflectionService(Endpoint endpoint,@Value("${grpc.reflection.service.cache}") int expiredTime) {
     this.endpoint = endpoint;
+    FILE_DESCRIPTOR_SET_STORAGE = new CacheStorage<>(
+            () -> CacheBuilder.newBuilder().expireAfterWrite(expiredTime, TimeUnit.SECONDS).build()
+    );
   }
 
   public void loadGrpcServices() {

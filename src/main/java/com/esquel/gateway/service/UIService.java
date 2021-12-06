@@ -1,5 +1,6 @@
 package com.esquel.gateway.service;
 
+import com.esquel.gateway.constrants.EnvType;
 import com.esquel.gateway.constrants.FieldTypeEnum;
 import com.esquel.gateway.model.ApiDocument;
 import com.esquel.gateway.model.Endpoint;
@@ -26,14 +27,23 @@ public class UIService {
 
   private final GrpcReflectionService grpcReflectionService;
 
-  @Value("${server.port}")
-  private int port;
-
   private final Endpoint endpoint;
 
-  public UIService(GrpcReflectionService grpcReflectionService, Endpoint endpoint) {
+  private final String env;
+  private final String uiServerHost;
+  private final int uiServerPort;
+
+  public UIService(GrpcReflectionService grpcReflectionService,
+                   Endpoint endpoint,
+                   @Value("${app.env}") String env,
+                   @Value("${ui.service.host}") String uiServerHost,
+                   @Value("${ui.service.port}") int uiServerPort
+  ) {
     this.grpcReflectionService = grpcReflectionService;
     this.endpoint = endpoint;
+    this.env = env;
+    this.uiServerHost = uiServerHost;
+    this.uiServerPort = uiServerPort;
   }
 
   public ApiDocument getApiDoc() {
@@ -57,20 +67,8 @@ public class UIService {
       }
     });
 
-    try {
-      String server_host = System.getenv("UI_SERVER_HOST");
-      String server_port = System.getenv("UI_SERVER_PORT");
-      List<String> ignorePort = List.of("80", "443");
-      if (Objects.nonNull(server_host) && !server_host.isEmpty() &&
-              Objects.nonNull(server_port) && !server_port.isEmpty()) {
-        builder.host(server_host + (ignorePort.contains(server_port) ? "" : ":" + server_port));
-      } else {
-        builder.host( java.net.InetAddress.getLocalHost().getHostName()
-                + (ignorePort.contains(String.valueOf(port)) ? "" : ":" + port));
-      }
-    } catch (Exception e) {
-      builder.host(String.format("%s:%d", "localhost", port));
-    }
+    List<Integer> ignorePort = List.of(80, 443);
+    builder.host(uiServerHost + (ignorePort.contains(uiServerPort) ? "" : ":" + uiServerPort));
 
     //tags
     Endpoint currentEndPoint = grpcReflectionService.getCurrentEndPoint();
@@ -100,7 +98,11 @@ public class UIService {
 
     builder.tags(tagList);
 
-    builder.schemes(List.of("http", "https"));
+    if (EnvType.LOCAL.name().equalsIgnoreCase(env)) {
+      builder.schemes(List.of("http", "https"));
+    } else {
+      builder.schemes(List.of("https", "http"));
+    }
 
     builder.securityDefinitions(new HashMap<>() {
       {

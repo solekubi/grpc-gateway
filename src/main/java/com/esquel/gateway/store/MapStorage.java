@@ -1,5 +1,6 @@
 package com.esquel.gateway.store;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +54,6 @@ public class MapStorage<K, V> implements BaseStorage<K, V> {
   }
 
   public List<V> values(){
-    return new ArrayList<>(map.values());
+    return ImmutableList.copyOf(map.values());
   }
 }
