@@ -29,24 +29,13 @@ public class UIService {
 
   private final Endpoint endpoint;
 
-  private final String env;
-  private final String uiServerHost;
-  private final int uiServerPort;
-
   public UIService(GrpcReflectionService grpcReflectionService,
-                   Endpoint endpoint,
-                   @Value("${app.env}") String env,
-                   @Value("${ui.server.host}") String uiServerHost,
-                   @Value("${ui.server.port}") int uiServerPort
-  ) {
+                   Endpoint endpoint) {
     this.grpcReflectionService = grpcReflectionService;
     this.endpoint = endpoint;
-    this.env = env;
-    this.uiServerHost = uiServerHost;
-    this.uiServerPort = uiServerPort;
   }
 
-  public ApiDocument getApiDoc() {
+  public ApiDocument getApiDoc(Endpoint uiEndpoint) {
 
     if (grpcReflectionService.getStorage().isEmpty()) {
       try {
@@ -62,13 +51,13 @@ public class UIService {
     builder.info(new HashMap<>() {
       {
         put("title", "Grpc GateWay Swagger");
-        put("description", String.format("Default Grpc Endpoint = [%s]", endpoint.toString()));
+        put("description", String.format("Default Grpc Endpoint = [%s]", UIService.this.endpoint.toString()));
         put("version", "1.0.0");
       }
     });
 
     List<Integer> ignorePort = List.of(80, 443);
-    builder.host(uiServerHost + (ignorePort.contains(uiServerPort) ? "" : ":" + uiServerPort));
+    builder.host(uiEndpoint.getHost() + (ignorePort.contains(uiEndpoint.getPort()) ? "" : ":" + uiEndpoint.getPort()));
 
     //tags
     Endpoint currentEndPoint = grpcReflectionService.getCurrentEndPoint();
@@ -98,11 +87,7 @@ public class UIService {
 
     builder.tags(tagList);
 
-    if (EnvType.LOCAL.name().equalsIgnoreCase(env)) {
-      builder.schemes(List.of("http", "https"));
-    } else {
-      builder.schemes(List.of("https", "http"));
-    }
+    builder.schemes(List.of(uiEndpoint.getScheme()));
 
     builder.securityDefinitions(new HashMap<>() {
       {

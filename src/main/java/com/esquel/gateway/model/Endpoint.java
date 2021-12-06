@@ -17,12 +17,20 @@ public class Endpoint {
   @Value("${grpc.service.port}")
   private int port;
 
+  private String scheme;
+
   public Endpoint(String host, int port) {
     this.host = host;
     this.port = port;
   }
 
   public Endpoint() {
+  }
+
+  public Endpoint(String host, int port, String scheme) {
+    this.host = host;
+    this.port = port;
+    this.scheme = scheme;
   }
 
   @Override

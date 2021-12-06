@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Controller
@@ -48,8 +49,9 @@ public class UIController {
 
   @RequestMapping(value = "/swagger-ui/api-docs", method = RequestMethod.GET)
   @ResponseBody
-  public ApiDocument getApiDoc() {
-    return uiService.getApiDoc();
+  public ApiDocument getApiDoc(HttpServletRequest request)
+  {
+    return uiService.getApiDoc(new Endpoint(request.getServerName(),request.getServerPort(),request.getScheme()));
   }
 
 }
