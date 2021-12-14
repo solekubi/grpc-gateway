@@ -21,6 +21,7 @@ import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
@@ -149,6 +150,7 @@ public class GrpcProxyService {
       CallResults results = invokeMethod(methodDefinition, serviceChannel, DEFAULT, singletonList(payload));
       return Result.builder().code(200).result(results.asJSON()).build();
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       String message = e.toString();
       Metadata metadata = Status.trailersFromThrowable(e);
       if (Objects.nonNull(metadata)) {
@@ -167,7 +169,7 @@ public class GrpcProxyService {
 
   private Endpoint getCurrentEndpoint() {
     Endpoint endpoint = grpcReflectionService.getCurrentEndPoint();
-    if (Objects.isNull(endpoint)) {
+    if (Objects.isNull(endpoint) || grpcReflectionService.getStorage().isEmpty()) {
       grpcReflectionService.loadGrpcServices();
       endpoint = grpcReflectionService.getCurrentEndPoint();
     }
